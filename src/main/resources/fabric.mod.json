@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "mineclaw-messenger",
+  "version": "${version}",
+  "name": "MineClaw Messenger",
+  "description": "Send messages to Nav from Minecraft chat",
+  "authors": [
+    "Corban"
+  ],
+  "contact": {
+    "homepage": "https://github.com/CorbanMonoxide/MineClaw-Messenger",
+    "sources": "https://github.com/CorbanMonoxide/MineClaw-Messenger"
+  },
+  "license": "MIT",
+  "icon": "assets/mineclaw/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.mineclaw.MineClawMessengerClient"
+    ]
+  },
+  "mixins": [
+    "mineclaw.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "fabric-api": "*",
+    "minecraft": "~1.26"
+  }
+}
