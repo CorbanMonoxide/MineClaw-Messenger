@@ -2,19 +2,22 @@
 """
 MineClaw Messenger Webhook Listener
 Runs on navibuntu, listens for Minecraft @nav messages,
-and routes them to OpenClaw via local message API.
+and routes them to Discord via OpenClaw session messaging.
 """
 
 import json
-import socket
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urljoin
-import requests
 import sys
+import os
 
-OPENCLAW_MESSAGE_API = "http://localhost:8000/api/message"
+# If running on the same machine as OpenClaw, we can import the session API
+# Otherwise, we send to Discord directly or a local session
+
 LISTEN_HOST = "localhost"
 LISTEN_PORT = 8765
+
+# Discord channel to send messages to (Nav's DM channel)
+DISCORD_CHANNEL_ID = "195974388036665344"  # Corban's user ID (DM)
 
 
 class NavWebhookHandler(BaseHTTPRequestHandler):
@@ -38,28 +41,43 @@ class NavWebhookHandler(BaseHTTPRequestHandler):
                 self.wfile.write(b'{"error": "Empty message"}')
                 return
 
-            # Route to OpenClaw
-            payload = {
-                "message": message,
-                "source": f"minecraft:{sender}",
-                "channel": "discord"  # Adjust as needed
-            }
+            # Format the message for Discord
+            formatted_message = f"**[Minecraft]** {message}"
 
+            # Try to use openclaw CLI to send the message
+            import subprocess
             try:
-                response = requests.post(OPENCLAW_MESSAGE_API, json=payload, timeout=5)
-                if response.status_code in [200, 202]:
+                result = subprocess.run(
+                    ["openclaw", "message", "send", 
+                     "--channel", "discord",
+                     "--target", DISCORD_CHANNEL_ID,
+                     formatted_message],
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+                
+                if result.returncode == 0:
                     self.send_response(200)
                     self.end_headers()
                     self.wfile.write(b'{"status": "ok"}')
+                    print(f"✓ Message from Minecraft: {message[:50]}...", file=sys.stderr)
                 else:
                     self.send_response(502)
                     self.end_headers()
-                    self.wfile.write(b'{"error": "OpenClaw API error"}')
-            except requests.exceptions.RequestException as e:
-                print(f"Error contacting OpenClaw API: {e}", file=sys.stderr)
+                    self.wfile.write(b'{"error": "OpenClaw CLI error"}')
+                    print(f"✗ OpenClaw error: {result.stderr}", file=sys.stderr)
+                    
+            except subprocess.TimeoutExpired:
                 self.send_response(502)
                 self.end_headers()
-                self.wfile.write(b'{"error": "API unavailable"}')
+                self.wfile.write(b'{"error": "OpenClaw CLI timeout"}')
+                print("✗ OpenClaw CLI timeout", file=sys.stderr)
+            except FileNotFoundError:
+                self.send_response(502)
+                self.end_headers()
+                self.wfile.write(b'{"error": "OpenClaw CLI not found"}')
+                print("✗ OpenClaw CLI not found in PATH", file=sys.stderr)
 
         except json.JSONDecodeError:
             self.send_response(400)
@@ -80,7 +98,7 @@ def run_server():
     server_address = (LISTEN_HOST, LISTEN_PORT)
     httpd = HTTPServer(server_address, NavWebhookHandler)
     print(f"MineClaw Webhook listening on {LISTEN_HOST}:{LISTEN_PORT}")
-    print(f"Forwarding messages to OpenClaw at {OPENCLAW_MESSAGE_API}")
+    print(f"Forwarding messages to Discord (@{DISCORD_CHANNEL_ID})")
     httpd.serve_forever()
 
 
