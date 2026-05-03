@@ -4,14 +4,13 @@
   "version": "${version}",
   "name": "MineClaw Messenger",
   "description": "Send messages to Nav from Minecraft",
-  "authors": [
-    "Corban"
-  ],
+  "authors": ["Corban"],
   "contact": {},
   "license": "MIT",
   "environment": "client",
   "entrypoints": {
-    "main": [
-      "com.mineclaw.MineClawMessenger"
-    ]
+    "main": ["com.mineclaw.MineClawMessenger"],
+    "client": ["com.mineclaw.MineClawMessengerClient"]
   },
+  "mixins": []
+}
