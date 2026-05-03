@@ -1,0 +1,4 @@
+  File "/home/navibuntu/MineClaw-Messenger/server/nav_webhook.py", line 44
+    self.wfile.write(b{error: Empty message})
+                      ^
+SyntaxError: invalid syntax
